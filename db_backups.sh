@@ -13,7 +13,7 @@ set +a
 # Create backup directory if not exists
 sudo mkdir -p "$BACKUP_DIR"
 
-sudo chown jenkins:jenkins /home/jenkins/backups
+sudo chown jenkins:jenkins "$BACKUP_DIR"
 
 echo "🔹 Starting Nextcloud SQL backup at $TIMESTAMP..."
 

@@ -124,7 +124,7 @@ pipeline {
                 wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
                     sh '''
                         echo "Cleaning the VM backups"
-                        sudo rm -rf /mnt/data/backups/*
+                        sudo rm -rf "${BACKUP_DIR}"/*
                     '''
                 }
             }
