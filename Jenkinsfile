@@ -3,8 +3,8 @@ pipeline {
     agent none
 
     environment {
-        GIT_CREDS_ID    = 'backup-job-token'
-        SCRIPTS_DIR     = '.'
+        GIT_CREDS_ID     = 'backup-job-token'
+        SCRIPTS_DIR      = '.'
         NEXTCLOUD_ENV_ID = 'nextcloud-env-file'
     }
 
@@ -29,11 +29,18 @@ pipeline {
                 withCredentials([file(credentialsId: "${env.NEXTCLOUD_ENV_ID}", variable: 'ENV_FILE')]) {
                     wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
                         sh """
+                            rm -f "${env.SCRIPTS_DIR}/.env"
                             cp "\$ENV_FILE" "${env.SCRIPTS_DIR}/.env"
+                            chmod 600 "${env.SCRIPTS_DIR}/.env"
                             chmod +x "${env.SCRIPTS_DIR}/db_backups.sh"
                             "${env.SCRIPTS_DIR}/db_backups.sh"
                         """
                     }
+                }
+            }
+            post {
+                always {
+                    sh "rm -f '${env.SCRIPTS_DIR}/.env'"
                 }
             }
         }
@@ -46,11 +53,18 @@ pipeline {
                 withCredentials([file(credentialsId: "${env.NEXTCLOUD_ENV_ID}", variable: 'ENV_FILE')]) {
                     wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
                         sh """
+                            rm -f "${env.SCRIPTS_DIR}/.env"
                             cp "\$ENV_FILE" "${env.SCRIPTS_DIR}/.env"
+                            chmod 600 "${env.SCRIPTS_DIR}/.env"
                             chmod +x "${env.SCRIPTS_DIR}/files_backup.sh"
                             "${env.SCRIPTS_DIR}/files_backup.sh"
                         """
                     }
+                }
+            }
+            post {
+                always {
+                    sh "rm -f '${env.SCRIPTS_DIR}/.env'"
                 }
             }
         }
@@ -63,11 +77,18 @@ pipeline {
                 withCredentials([file(credentialsId: "${env.NEXTCLOUD_ENV_ID}", variable: 'ENV_FILE')]) {
                     wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
                         sh """
+                            rm -f "${env.SCRIPTS_DIR}/.env"
                             cp "\$ENV_FILE" "${env.SCRIPTS_DIR}/.env"
+                            chmod 600 "${env.SCRIPTS_DIR}/.env"
                             chmod +x "${env.SCRIPTS_DIR}/send_sftp.sh"
                             "${env.SCRIPTS_DIR}/send_sftp.sh"
                         """
                     }
+                }
+            }
+            post {
+                always {
+                    sh "rm -f '${env.SCRIPTS_DIR}/.env'"
                 }
             }
         }
@@ -80,11 +101,18 @@ pipeline {
                 withCredentials([file(credentialsId: "${env.NEXTCLOUD_ENV_ID}", variable: 'ENV_FILE')]) {
                     wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
                         sh """
+                            rm -f "${env.SCRIPTS_DIR}/.env"
                             cp "\$ENV_FILE" "${env.SCRIPTS_DIR}/.env"
+                            chmod 600 "${env.SCRIPTS_DIR}/.env"
                             chmod +x "${env.SCRIPTS_DIR}/cleanup.sh"
                             "${env.SCRIPTS_DIR}/cleanup.sh"
                         """
                     }
+                }
+            }
+            post {
+                always {
+                    sh "rm -f '${env.SCRIPTS_DIR}/.env'"
                 }
             }
         }
@@ -110,11 +138,18 @@ pipeline {
                 withCredentials([file(credentialsId: "${env.NEXTCLOUD_ENV_ID}", variable: 'ENV_FILE')]) {
                     wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
                         sh """
+                            rm -f "${env.SCRIPTS_DIR}/.env"
                             cp "\$ENV_FILE" "${env.SCRIPTS_DIR}/.env"
+                            chmod 600 "${env.SCRIPTS_DIR}/.env"
                             chmod +x "${env.SCRIPTS_DIR}/sftp_cleanup.sh"
                             "${env.SCRIPTS_DIR}/sftp_cleanup.sh"
                         """
                     }
+                }
+            }
+            post {
+                always {
+                    sh "rm -f '${env.SCRIPTS_DIR}/.env'"
                 }
             }
         }
