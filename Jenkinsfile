@@ -1,11 +1,12 @@
 pipeline {
 
-    agent { label 'nextcloud-home' }
+    agent none
 
     environment {
         GIT_REPO_URL = 'https://github.com/Raj34970/CronJob_Nextcloud.git'
         GIT_BRANCH   = 'main'
-        GIT_CREDS_ID = 'backup-job-token'
+        // Set GIT_CREDS_ID to an existing Jenkins credential ID if private, or leave blank '' for public repos
+        GIT_CREDS_ID = ''
         SCRIPTS_DIR  = '.'
     }
 
