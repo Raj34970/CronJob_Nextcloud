@@ -3,8 +3,9 @@ pipeline {
     agent none
 
     environment {
-        GIT_CREDS_ID = 'backup-job-token'
-        SCRIPTS_DIR  = '.'
+        GIT_CREDS_ID    = 'backup-job-token'
+        SCRIPTS_DIR     = '.'
+        NEXTCLOUD_ENV_ID = 'nextcloud-env-file'
     }
 
     triggers {
@@ -25,11 +26,14 @@ pipeline {
             agent { label 'nextcloud-home' }
             steps {
                 checkout scm
-                wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
-                    sh """
-                        chmod +x "${env.SCRIPTS_DIR}/db_backups.sh"
-                        "${env.SCRIPTS_DIR}/db_backups.sh"
-                    """
+                withCredentials([file(credentialsId: "${env.NEXTCLOUD_ENV_ID}", variable: 'ENV_FILE')]) {
+                    wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
+                        sh """
+                            cp "\$ENV_FILE" "${env.SCRIPTS_DIR}/.env"
+                            chmod +x "${env.SCRIPTS_DIR}/db_backups.sh"
+                            "${env.SCRIPTS_DIR}/db_backups.sh"
+                        """
+                    }
                 }
             }
         }
@@ -39,11 +43,14 @@ pipeline {
             agent { label 'nextcloud-home' }
             steps {
                 checkout scm
-                wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
-                    sh """
-                        chmod +x "${env.SCRIPTS_DIR}/files_backup.sh"
-                        "${env.SCRIPTS_DIR}/files_backup.sh"
-                    """
+                withCredentials([file(credentialsId: "${env.NEXTCLOUD_ENV_ID}", variable: 'ENV_FILE')]) {
+                    wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
+                        sh """
+                            cp "\$ENV_FILE" "${env.SCRIPTS_DIR}/.env"
+                            chmod +x "${env.SCRIPTS_DIR}/files_backup.sh"
+                            "${env.SCRIPTS_DIR}/files_backup.sh"
+                        """
+                    }
                 }
             }
         }
@@ -53,11 +60,14 @@ pipeline {
             agent { label 'nextcloud-home' }
             steps {
                 checkout scm
-                wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
-                    sh """
-                        chmod +x "${env.SCRIPTS_DIR}/send_sftp.sh"
-                        "${env.SCRIPTS_DIR}/send_sftp.sh"
-                    """
+                withCredentials([file(credentialsId: "${env.NEXTCLOUD_ENV_ID}", variable: 'ENV_FILE')]) {
+                    wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
+                        sh """
+                            cp "\$ENV_FILE" "${env.SCRIPTS_DIR}/.env"
+                            chmod +x "${env.SCRIPTS_DIR}/send_sftp.sh"
+                            "${env.SCRIPTS_DIR}/send_sftp.sh"
+                        """
+                    }
                 }
             }
         }
@@ -67,11 +77,14 @@ pipeline {
             agent { label 'nextcloud-home' }
             steps {
                 checkout scm
-                wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
-                    sh """
-                        chmod +x "${env.SCRIPTS_DIR}/cleanup.sh"
-                        "${env.SCRIPTS_DIR}/cleanup.sh"
-                    """
+                withCredentials([file(credentialsId: "${env.NEXTCLOUD_ENV_ID}", variable: 'ENV_FILE')]) {
+                    wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
+                        sh """
+                            cp "\$ENV_FILE" "${env.SCRIPTS_DIR}/.env"
+                            chmod +x "${env.SCRIPTS_DIR}/cleanup.sh"
+                            "${env.SCRIPTS_DIR}/cleanup.sh"
+                        """
+                    }
                 }
             }
         }
@@ -94,11 +107,14 @@ pipeline {
             agent { label 'SFTP' }
             steps {
                 checkout scm
-                wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
-                    sh """
-                        chmod +x "${env.SCRIPTS_DIR}/sftp_cleanup.sh"
-                        "${env.SCRIPTS_DIR}/sftp_cleanup.sh"
-                    """
+                withCredentials([file(credentialsId: "${env.NEXTCLOUD_ENV_ID}", variable: 'ENV_FILE')]) {
+                    wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
+                        sh """
+                            cp "\$ENV_FILE" "${env.SCRIPTS_DIR}/.env"
+                            chmod +x "${env.SCRIPTS_DIR}/sftp_cleanup.sh"
+                            "${env.SCRIPTS_DIR}/sftp_cleanup.sh"
+                        """
+                    }
                 }
             }
         }
