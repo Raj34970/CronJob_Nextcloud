@@ -1,3 +1,12 @@
+
+def checkoutRepo() {
+    if (env.GIT_CREDS_ID?.trim()) {
+        git branch: "${env.GIT_BRANCH}", credentialsId: "${env.GIT_CREDS_ID.trim()}", url: "${env.GIT_REPO_URL}"
+    } else {
+        git branch: "${env.GIT_BRANCH}", url: "${env.GIT_REPO_URL}"
+    }
+}
+
 pipeline {
 
     agent none
@@ -5,7 +14,7 @@ pipeline {
     environment {
         GIT_REPO_URL = 'https://github.com/Raj34970/CronJob_Nextcloud.git'
         GIT_BRANCH   = 'main'
-        // Set GIT_CREDS_ID to an existing Jenkins credential ID if private, or leave blank '' for public repos
+        // Leave empty '' for a public repo, or set to a valid Jenkins credential ID (e.g. 'backup-job-token') for a private repo
         GIT_CREDS_ID = ''
         SCRIPTS_DIR  = '.'
     }
@@ -27,7 +36,9 @@ pipeline {
             when { expression { return params.backup_db } }
             agent { label 'nextcloud-home' }
             steps {
-                git branch: "${env.GIT_BRANCH}", credentialsId: "${env.GIT_CREDS_ID}", url: "${env.GIT_REPO_URL}"
+                script {
+                    checkoutRepo()
+                }
                 wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
                     sh """
                         chmod +x "${env.SCRIPTS_DIR}/db_backups.sh"
@@ -41,7 +52,9 @@ pipeline {
             when { expression { return params.backup_files } }
             agent { label 'nextcloud-home' }
             steps {
-                git branch: "${env.GIT_BRANCH}", credentialsId: "${env.GIT_CREDS_ID}", url: "${env.GIT_REPO_URL}"
+                script {
+                    checkoutRepo()
+                }
                 wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
                     sh """
                         chmod +x "${env.SCRIPTS_DIR}/files_backup.sh"
@@ -55,7 +68,9 @@ pipeline {
             when { expression { return params.send_sftp } }
             agent { label 'nextcloud-home' }
             steps {
-                git branch: "${env.GIT_BRANCH}", credentialsId: "${env.GIT_CREDS_ID}", url: "${env.GIT_REPO_URL}"
+                script {
+                    checkoutRepo()
+                }
                 wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
                     sh """
                         chmod +x "${env.SCRIPTS_DIR}/send_sftp.sh"
@@ -69,7 +84,9 @@ pipeline {
             when { expression { return params.cleanup } }
             agent { label 'nextcloud-home' }
             steps {
-                git branch: "${env.GIT_BRANCH}", credentialsId: "${env.GIT_CREDS_ID}", url: "${env.GIT_REPO_URL}"
+                script {
+                    checkoutRepo()
+                }
                 wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
                     sh """
                         chmod +x "${env.SCRIPTS_DIR}/cleanup.sh"
@@ -96,7 +113,9 @@ pipeline {
             when { expression { return params.remove_nextcloud_backups } }
             agent { label 'SFTP' }
             steps {
-                git branch: "${env.GIT_BRANCH}", credentialsId: "${env.GIT_CREDS_ID}", url: "${env.GIT_REPO_URL}"
+                script {
+                    checkoutRepo()
+                }
                 wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
                     sh """
                         chmod +x "${env.SCRIPTS_DIR}/sftp_cleanup.sh"
