@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # loading the .env file
 if [ ! -f "$(dirname "$0")/.env" ]; then RETURN_CODE=1; critical "No environment file, use the sample file"; fi
 set -a

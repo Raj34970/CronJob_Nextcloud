@@ -1,11 +1,44 @@
-pipeline {
+def runBackupScript(String scriptName, boolean bindEnv = true) {
+    return {
+        checkout scm
+        wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
+            if (bindEnv) {
+                withCredentials([file(credentialsId: "${env.NEXTCLOUD_ENV_ID}", variable: 'ENV_FILE')]) {
+                    try {
+                        sh """
+                            set -euo pipefail
+                            TARGET_ENV="${env.SCRIPTS_DIR}/.env"
+                            cp "\$ENV_FILE" "\$TARGET_ENV"
+                            chmod 600 "\$TARGET_ENV"
+                            chmod +x "${env.SCRIPTS_DIR}/${scriptName}"
+                            "${env.SCRIPTS_DIR}/${scriptName}"
+                        """
+                    } finally {
+                        sh """
+                            set -euo pipefail
+                            rm -f "${env.SCRIPTS_DIR}/.env"
+                        """
+                    }
+                }
+            } else {
+                sh """
+                    set -euo pipefail
+                    chmod +x "${env.SCRIPTS_DIR}/${scriptName}"
+                    "${env.SCRIPTS_DIR}/${scriptName}"
+                """
+            }
+        }
+    }
+}
 
+pipeline {
     agent none
 
     environment {
         GIT_CREDS_ID     = 'backup-job-token'
         SCRIPTS_DIR      = '.'
         NEXTCLOUD_ENV_ID = 'nextcloud-env-file'
+        BACKUP_DIR       = '/mnt/data/backups'
     }
 
     triggers {
@@ -25,22 +58,8 @@ pipeline {
             when { expression { return params.backup_db } }
             agent { label 'nextcloud-home' }
             steps {
-                checkout scm
-                withCredentials([file(credentialsId: "${env.NEXTCLOUD_ENV_ID}", variable: 'ENV_FILE')]) {
-                    wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
-                        sh """
-                            rm -f "${env.SCRIPTS_DIR}/.env"
-                            cp "\$ENV_FILE" "${env.SCRIPTS_DIR}/.env"
-                            chmod 600 "${env.SCRIPTS_DIR}/.env"
-                            chmod +x "${env.SCRIPTS_DIR}/db_backups.sh"
-                            "${env.SCRIPTS_DIR}/db_backups.sh"
-                        """
-                    }
-                }
-            }
-            post {
-                always {
-                    sh "rm -f '${env.SCRIPTS_DIR}/.env'"
+                script {
+                    runBackupScript('db_backups.sh', true)()
                 }
             }
         }
@@ -49,22 +68,8 @@ pipeline {
             when { expression { return params.backup_files } }
             agent { label 'nextcloud-home' }
             steps {
-                checkout scm
-                withCredentials([file(credentialsId: "${env.NEXTCLOUD_ENV_ID}", variable: 'ENV_FILE')]) {
-                    wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
-                        sh """
-                            rm -f "${env.SCRIPTS_DIR}/.env"
-                            cp "\$ENV_FILE" "${env.SCRIPTS_DIR}/.env"
-                            chmod 600 "${env.SCRIPTS_DIR}/.env"
-                            chmod +x "${env.SCRIPTS_DIR}/files_backup.sh"
-                            "${env.SCRIPTS_DIR}/files_backup.sh"
-                        """
-                    }
-                }
-            }
-            post {
-                always {
-                    sh "rm -f '${env.SCRIPTS_DIR}/.env'"
+                script {
+                    runBackupScript('files_backup.sh', true)()
                 }
             }
         }
@@ -73,22 +78,8 @@ pipeline {
             when { expression { return params.send_sftp } }
             agent { label 'nextcloud-home' }
             steps {
-                checkout scm
-                withCredentials([file(credentialsId: "${env.NEXTCLOUD_ENV_ID}", variable: 'ENV_FILE')]) {
-                    wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
-                        sh """
-                            rm -f "${env.SCRIPTS_DIR}/.env"
-                            cp "\$ENV_FILE" "${env.SCRIPTS_DIR}/.env"
-                            chmod 600 "${env.SCRIPTS_DIR}/.env"
-                            chmod +x "${env.SCRIPTS_DIR}/send_sftp.sh"
-                            "${env.SCRIPTS_DIR}/send_sftp.sh"
-                        """
-                    }
-                }
-            }
-            post {
-                always {
-                    sh "rm -f '${env.SCRIPTS_DIR}/.env'"
+                script {
+                    runBackupScript('send_sftp.sh', true)()
                 }
             }
         }
@@ -97,22 +88,8 @@ pipeline {
             when { expression { return params.cleanup } }
             agent { label 'nextcloud-home' }
             steps {
-                checkout scm
-                withCredentials([file(credentialsId: "${env.NEXTCLOUD_ENV_ID}", variable: 'ENV_FILE')]) {
-                    wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
-                        sh """
-                            rm -f "${env.SCRIPTS_DIR}/.env"
-                            cp "\$ENV_FILE" "${env.SCRIPTS_DIR}/.env"
-                            chmod 600 "${env.SCRIPTS_DIR}/.env"
-                            chmod +x "${env.SCRIPTS_DIR}/cleanup.sh"
-                            "${env.SCRIPTS_DIR}/cleanup.sh"
-                        """
-                    }
-                }
-            }
-            post {
-                always {
-                    sh "rm -f '${env.SCRIPTS_DIR}/.env'"
+                script {
+                    runBackupScript('cleanup.sh', true)()
                 }
             }
         }
@@ -123,8 +100,27 @@ pipeline {
             steps {
                 wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
                     sh '''
-                        echo "Cleaning the VM backups"
-                        sudo rm -rf "${BACKUP_DIR}"/*
+                        set -euo pipefail
+
+                        : "${BACKUP_DIR:?ERROR: BACKUP_DIR is unset or empty}"
+
+                        RESOLVED_DIR="$(realpath -m "${BACKUP_DIR}")"
+                        case "${RESOLVED_DIR}" in
+                            ""|"/"|"/root"|"/root/script"|"/mnt"|"/mnt/data")
+                                echo "ERROR: Refusing to delete from unsafe path: ${RESOLVED_DIR}" >&2
+                                exit 1
+                                ;;
+                        esac
+
+                        if [ ! -d "${RESOLVED_DIR}" ]; then
+                            echo "Backup directory ${RESOLVED_DIR} does not exist; skipping cleanup."
+                            exit 0
+                        fi
+
+                        echo "Cleaning backup files in ${RESOLVED_DIR}"
+                        sudo find "${RESOLVED_DIR}" -maxdepth 1 -type f \
+                            \( -name 'nextcloud-config_*.tar.gz' -o -name 'nextcloud-db_*.sql' \) \
+                            -delete
                     '''
                 }
             }
@@ -134,22 +130,8 @@ pipeline {
             when { expression { return params.remove_nextcloud_backups } }
             agent { label 'SFTP' }
             steps {
-                checkout scm
-                withCredentials([file(credentialsId: "${env.NEXTCLOUD_ENV_ID}", variable: 'ENV_FILE')]) {
-                    wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'gnome-terminal']) {
-                        sh """
-                            rm -f "${env.SCRIPTS_DIR}/.env"
-                            cp "\$ENV_FILE" "${env.SCRIPTS_DIR}/.env"
-                            chmod 600 "${env.SCRIPTS_DIR}/.env"
-                            chmod +x "${env.SCRIPTS_DIR}/sftp_cleanup.sh"
-                            "${env.SCRIPTS_DIR}/sftp_cleanup.sh"
-                        """
-                    }
-                }
-            }
-            post {
-                always {
-                    sh "rm -f '${env.SCRIPTS_DIR}/.env'"
+                script {
+                    runBackupScript('sftp_cleanup.sh', false)()
                 }
             }
         }
