@@ -38,7 +38,7 @@ pipeline {
         GIT_CREDS_ID     = 'backup-job-token'
         SCRIPTS_DIR      = '.'
         NEXTCLOUD_ENV_ID = 'nextcloud-env-file'
-        BACKUP_DIR       = '/mnt/data/backups'
+        BACKUP_DIR       = '/mnt/data/nextcloud-backups'
     }
 
     triggers {
@@ -118,9 +118,8 @@ pipeline {
                         fi
 
                         echo "Cleaning backup files in ${RESOLVED_DIR}"
-                        sudo find "${RESOLVED_DIR}" -maxdepth 1 -type f \
-                            \( -name 'nextcloud-config_*.tar.gz' -o -name 'nextcloud-db_*.sql' \) \
-                            -delete
+                        sudo find "${RESOLVED_DIR}" -maxdepth 1 -type f -name 'nextcloud-config_*.tar.gz' -delete
+                        sudo find "${RESOLVED_DIR}" -maxdepth 1 -type f -name 'nextcloud-db_*.sql' -delete
                     '''
                 }
             }
